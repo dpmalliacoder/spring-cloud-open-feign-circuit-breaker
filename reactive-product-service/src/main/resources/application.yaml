@@ -17,6 +17,8 @@ spring:
         openfeign:
             circuitbreaker:
                 enabled: true
+            micrometer:
+                enabled: true
 ---
 management:
     endpoint:
