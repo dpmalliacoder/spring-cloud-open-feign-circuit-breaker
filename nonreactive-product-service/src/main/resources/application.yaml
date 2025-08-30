@@ -1,0 +1,66 @@
+spring:
+    application:
+        name: nonreactive-product-service
+    datasource:
+        url: jdbc:h2:mem:productdb
+        driver-class-name: org.h2.Driver
+        username: sa
+        password:
+    h2:
+        console:
+            enabled: true
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+    cloud:
+        openfeign:
+            circuitbreaker:
+                enabled: true
+---
+management:
+    endpoint:
+        health:
+            show-details: always
+        prometheus:
+            enabled: true
+    endpoints:
+        web:
+            exposure:
+                include: health, info
+---
+server:
+    port: 8081
+
+---
+review:
+    service:
+        url: http://localhost:8082/api/v1/reviews/
+---
+resilience4j.retry:
+    instances:
+        review-service:
+            maxRetryAttempts: 2
+            waitDuration: 1s
+            retryExceptions:
+                - org.springframework.web.client.HttpServerErrorException
+            ignoreExceptions:
+                - org.springframework.web.client.HttpClientErrorException
+resilience4j:
+    circuitbreaker:
+        configs:
+            default:
+                sliding-window-type: COUNT_BASED
+                sliding-window-size: 10
+                permitted-number-of-calls-in-half-open-state: 3
+                wait-duration-in-open-state: 10s
+                failure-rate-threshold: 60
+                minimum-number-of-calls: 5
+                recordExceptions:
+                    - org.springframework.web.client.HttpServerErrorException
+                    - org.springframework.web.client.HttpClientErrorException
+                automatic-transition-from-open-to-half-open-enabled: true
+                register-health-indicator: true
+        instances:
+            review-service:
+                baseConfig: default
